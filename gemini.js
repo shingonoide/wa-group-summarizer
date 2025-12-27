@@ -546,7 +546,7 @@ Guidelines:
 - Group similar opinions together
 - Capture conversation tone for casual chats
 - List top 5 participants by message count
-- Always output in English
+- Output in the same language as the conversation
 - Include ALL shared links with context
 
 Messages to analyze:

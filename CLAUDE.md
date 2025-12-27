@@ -74,7 +74,7 @@ No automated tests - manual testing via Chrome DevTools. Enable debug logging wi
 
 - Always use `getLastNMessages()` helper for scraping - don't duplicate DOM logic
 - Side panel is primary interface; popup is fallback
-- All summaries output in English regardless of chat language
+- Summaries output in the same language as the conversation (auto-detect)
 - API key validation: must start with `AIza`
 - Options page uses ES modules (`type="module"`) for imports
 
