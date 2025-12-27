@@ -207,17 +207,22 @@ export async function summarizeMessages(
 function parseStructuredResponse(text) {
   try {
     let jsonStr = text.trim();
-    
+
     if (jsonStr.startsWith('```')) {
       jsonStr = jsonStr.replace(/^```json?\n?/, '').replace(/\n?```$/, '');
     }
-    
+
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
+    }
+
     const parsed = JSON.parse(jsonStr);
-    
+
     if (!parsed.tldr || !Array.isArray(parsed.keyPoints)) {
       throw new Error('Missing required fields');
     }
-    
+
     console.log("[Gemini] Successfully parsed structured response");
     return {
       success: true,
@@ -230,7 +235,32 @@ function parseStructuredResponse(text) {
       }
     };
   } catch (error) {
-    console.warn('[Gemini] Failed to parse structured response, falling back to raw text:', error.message);
+    console.warn('[Gemini] Failed to parse JSON, attempting manual extraction:', error.message);
+
+    try {
+      const tldrMatch = text.match(/"tldr"\s*:\s*"([^"]+)"/);
+      const keyPointsMatch = text.match(/"keyPoints"\s*:\s*\[([\s\S]*?)\]/);
+
+      if (tldrMatch && keyPointsMatch) {
+        const keyPointsStr = keyPointsMatch[1];
+        const keyPoints = keyPointsStr.match(/"([^"]+)"/g)?.map(s => s.replace(/"/g, '')) || [];
+
+        console.log("[Gemini] Manual extraction successful");
+        return {
+          success: true,
+          data: {
+            tldr: tldrMatch[1],
+            keyPoints: keyPoints,
+            links: [],
+            contextStatus: { isIncomplete: false, reason: '', suggestion: '' },
+            participants: []
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('[Gemini] Manual extraction also failed');
+    }
+
     return {
       success: false,
       rawText: text
@@ -503,14 +533,14 @@ function createPrompt(messages, summaryLength = "standard") {
   let tldrGuidance = "";
   let bulletsGuidance = "";
   if (summaryLength === "concise") {
-    tldrGuidance = "1-2 sentences, very concise, main outcome only";
-    bulletsGuidance = "2-4 bullet points, most important facts only";
+    tldrGuidance = "2-3 sentences, concise overview of main outcome";
+    bulletsGuidance = "3-5 bullet points, most important facts only";
   } else if (summaryLength === "comprehensive") {
-    tldrGuidance = "3-5 sentences, detailed overview with nuances";
-    bulletsGuidance = "8-12 bullet points, include details, action items, media mentions";
+    tldrGuidance = "6-8 sentences, detailed overview with context and nuances";
+    bulletsGuidance = "12-15 bullet points, include details, decisions, action items, media mentions";
   } else {
-    tldrGuidance = "2-4 sentences, main themes, tone, and outcomes";
-    bulletsGuidance = "5-8 bullet points, key decisions, who raised what, action items";
+    tldrGuidance = "4-6 sentences, main themes, tone, decisions and outcomes";
+    bulletsGuidance = "7-10 bullet points, key decisions, who raised what, action items";
   }
 
   let prompt = `You are a WhatsApp group chat summarizer. Analyze the messages and return ONLY valid JSON (no markdown, no code blocks).
