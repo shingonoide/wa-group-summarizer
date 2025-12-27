@@ -74,12 +74,12 @@ async function performSummarization(n) {
   const errorOutput = document.getElementById("error");
   const saveToggleContainer = document.getElementById("save-summary-toggle-container");
   const loadingSection = document.getElementById("loading");
-  const quotaInfo = document.getElementById("quota-info");
+  const usageInfo = document.getElementById("usage-info");
 
   summaryOutput.style.display = "none";
   saveToggleContainer.style.display = "none";
   errorOutput.style.display = "none";
-  if (quotaInfo) quotaInfo.style.display = "none";
+  if (usageInfo) usageInfo.style.display = "none";
   loadingSection.style.display = "flex";
 
   try {
@@ -151,6 +151,12 @@ async function performSummarization(n) {
     renderSummary(result, summaryOutput, {
       onExpandContext: handleExpandContext
     });
+
+    if (result.usage && usageInfo) {
+      const tokensEl = document.getElementById("usage-tokens");
+      tokensEl.textContent = `${result.usage.inputTokens.toLocaleString()} input · ${result.usage.outputTokens.toLocaleString()} output tokens`;
+      usageInfo.style.display = "flex";
+    }
 
     saveToggleContainer.style.display = "flex";
 

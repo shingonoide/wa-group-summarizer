@@ -191,12 +191,20 @@ export async function summarizeMessages(
     const summaryText = data.candidates[0].content.parts[0].text;
     console.log("[Gemini] Successfully received summary text");
 
+    const usageMetadata = data.usageMetadata || {};
+    console.log("[Gemini] Token usage:", usageMetadata);
+
     const parsed = parseStructuredResponse(summaryText);
     const metadata = extractMetadata(messages);
 
     return {
       ...parsed,
-      metadata
+      metadata,
+      usage: {
+        inputTokens: usageMetadata.promptTokenCount || 0,
+        outputTokens: usageMetadata.candidatesTokenCount || 0,
+        totalTokens: usageMetadata.totalTokenCount || 0
+      }
     };
   } catch (error) {
     console.error("[Gemini] Error in summarizeMessages:", error);
