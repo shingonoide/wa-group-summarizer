@@ -1,0 +1,264 @@
+// options/options.js
+
+import { getCuratedModelsList, clearQuotaState } from "../gemini.js";
+
+function loadModels() {
+  const modelSelect = document.getElementById("model");
+  const currentValue = modelSelect.value;
+
+  const models = getCuratedModelsList();
+
+  modelSelect.innerHTML = models
+    .map(m => {
+      const recommended = m.recommended ? " (Recommended)" : "";
+      const capabilities = [];
+      if (m.capabilities.image) capabilities.push("images");
+      if (m.capabilities.audio) capabilities.push("audio");
+      const capsText = capabilities.length > 0 ? ` [+${capabilities.join(", ")}]` : "";
+      return `<option value="${m.id}" title="${m.description}">${m.displayName}${recommended}${capsText}</option>`;
+    })
+    .join("");
+
+  if (currentValue && models.some(m => m.id === currentValue)) {
+    modelSelect.value = currentValue;
+  }
+
+  console.log(`Loaded ${models.length} curated models`);
+}
+
+async function clearQuota() {
+  await clearQuotaState();
+  const status = document.getElementById("status");
+  status.textContent = "Quota state cleared.";
+  status.style.color = "green";
+  setTimeout(() => {
+    status.textContent = "";
+  }, 2000);
+}
+
+// Saves options to chrome.storage.sync.
+function saveOptions(e) {
+  e.preventDefault();
+  const apiKey = document.getElementById("apiKey").value;
+  const model = document.getElementById("model").value;
+  const defaultN = document.querySelector(
+    'input[name="defaultN"]:checked'
+  ).value;
+  const saveSummaries = document.getElementById("saveSummaries").checked;
+  const includeMedia = document.getElementById("includeMedia").checked;
+  const summaryLength =
+    document.querySelector('input[name="summaryLength"]:checked')?.value ||
+    "standard";
+
+  if (!apiKey) {
+    const status = document.getElementById("status");
+    status.textContent = "Error: API Key is required.";
+    status.style.color = "red";
+    setTimeout(() => {
+      status.textContent = "";
+    }, 3000);
+    return;
+  }
+
+  chrome.storage.sync.set(
+    {
+      apiKey: apiKey,
+      model: model,
+      defaultN: parseInt(defaultN, 10),
+      saveSummaries: saveSummaries,
+      includeMedia: includeMedia,
+      summaryLength: summaryLength,
+    },
+    () => {
+      // Update status to let user know options were saved.
+      const status = document.getElementById("status");
+      status.textContent = "Options saved.";
+      status.style.color = "green";
+      setTimeout(() => {
+        status.textContent = "";
+      }, 2000);
+    }
+  );
+}
+
+function restoreOptions() {
+  const defaults = {
+    apiKey: "",
+    model: "gemini-2.5-flash-lite",
+    defaultN: 100,
+    saveSummaries: false,
+    includeMedia: false,
+    summaryLength: "standard",
+  };
+
+  chrome.storage.sync.get(defaults, (items) => {
+    document.getElementById("apiKey").value = items.apiKey;
+    document.getElementById("model").value = items.model;
+    document.querySelector(
+      `input[name="defaultN"][value="${items.defaultN}"]`
+    ).checked = true;
+    document.getElementById("saveSummaries").checked = items.saveSummaries;
+    document.getElementById("includeMedia").checked = items.includeMedia;
+    const summaryLength = items.summaryLength || "standard";
+    const radio = document.querySelector(
+      `input[name="summaryLength"][value="${summaryLength}"]`
+    );
+    if (radio) radio.checked = true;
+  });
+}
+
+function deleteAllSummaries() {
+  chrome.storage.local.clear(() => {
+    const status = document.getElementById("status");
+    status.textContent = "All summaries deleted.";
+    status.style.color = "green";
+    setTimeout(() => {
+      status.textContent = "";
+    }, 2000);
+    loadSavedMessages(); // Refresh the list after deleting all
+  });
+}
+
+function deleteSummary(key) {
+  chrome.storage.local.remove(key, () => {
+    const status = document.getElementById("status");
+    status.textContent = "Summary deleted.";
+    status.style.color = "green";
+    setTimeout(() => {
+      status.textContent = "";
+    }, 2000);
+    loadSavedMessages(); // Refresh the list after deleting individual summary
+  });
+}
+
+async function loadSavedMessages() {
+  const messagesList = document.getElementById("saved-messages-list");
+  if (!messagesList) {
+    console.error("Saved messages container not found");
+    return;
+  }
+
+  try {
+    // Show loading state
+    messagesList.innerHTML = "<p>Loading saved messages...</p>";
+
+    // Get all stored data
+    const items = await new Promise((resolve, reject) => {
+      chrome.storage.local.get(null, (result) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(result);
+        }
+      });
+    });
+
+    // Filter out extension settings and get only summary data
+    const summaryEntries = Object.entries(items).filter(([key, data]) => {
+      return (
+        data &&
+        typeof data === "object" &&
+        data.summary &&
+        !["apiKey", "model", "defaultN", "saveSummaries"].includes(key)
+      );
+    });
+
+    if (summaryEntries.length === 0) {
+      messagesList.innerHTML = "<p>No saved messages found.</p>";
+      return;
+    }
+
+    // Sort by timestamp (newest first) and create DOM elements efficiently
+    const sortedMessages = summaryEntries
+      .sort(([, a], [, b]) => {
+        const timeA = a.timestamp || a.date || 0;
+        const timeB = b.timestamp || b.date || 0;
+        return new Date(timeB) - new Date(timeA);
+      })
+      .map(([key, data]) => createMessageElement(data, key));
+
+    // Clear container and append all messages at once
+    messagesList.innerHTML = "";
+    messagesList.append(...sortedMessages);
+
+    // Add event listeners to delete buttons
+    document.querySelectorAll(".delete-summary-btn").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        const keyToDelete = event.target.getAttribute("data-key");
+        if (keyToDelete) {
+          deleteSummary(keyToDelete);
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Error loading saved messages:", error);
+    messagesList.innerHTML = `<p style="color: #ff4444;">Error loading messages: ${error.message}</p>`;
+  }
+}
+
+/**
+ * Creates a DOM element for a saved message
+ * @param {Object} data - Message data object
+ * @param {string} key - Storage key
+ * @returns {HTMLElement} - Created message element
+ */
+function createMessageElement(data, key) {
+  const messageElement = document.createElement("div");
+  messageElement.className = "saved-message";
+  messageElement.setAttribute("data-key", key);
+
+  const header = document.createElement("div");
+  header.className = "message-header";
+
+  // Create chat title with message count
+  const titleSpan = document.createElement("span");
+  titleSpan.className = "chat-title";
+  titleSpan.textContent = data.chatTitle || "Untitled Chat";
+
+  const countSpan = document.createElement("span");
+  countSpan.className = "message-count";
+  countSpan.textContent = data.messageCount
+    ? `(${data.messageCount} messages)`
+    : "";
+
+  header.appendChild(titleSpan);
+  header.appendChild(countSpan);
+
+  // Add delete button
+  const deleteButton = document.createElement("button");
+  deleteButton.className = "delete-summary-btn";
+  deleteButton.textContent = "Delete";
+  deleteButton.setAttribute("data-key", key);
+  header.appendChild(deleteButton);
+
+  const content = document.createElement("div");
+  content.className = "message-content";
+  content.textContent = data.summary;
+
+  const meta = document.createElement("div");
+  meta.className = "message-meta";
+
+  // Handle both timestamp and date fields for backward compatibility
+  const timestamp = data.timestamp || data.date;
+  const date = timestamp ? new Date(timestamp) : new Date();
+  meta.textContent = date.toLocaleString();
+
+  messageElement.append(header, content, meta);
+  return messageElement;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadModels();
+  restoreOptions();
+  loadSavedMessages();
+});
+
+document.getElementById("options-form").addEventListener("submit", saveOptions);
+document
+  .getElementById("delete-all-summaries")
+  .addEventListener("click", deleteAllSummaries);
+
+const clearQuotaBtn = document.getElementById("clear-quota-btn");
+if (clearQuotaBtn) {
+  clearQuotaBtn.addEventListener("click", clearQuota);
+}

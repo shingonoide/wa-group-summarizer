@@ -1,0 +1,35 @@
+# WA Group Summarizer
+
+Chrome Extension (Manifest V3) for summarizing WhatsApp Web conversations using Google Gemini AI.
+
+## Core Features
+
+- AI-powered chat summarization (50-500 messages)
+- Multimodal support for image analysis
+- Structured output: TL;DR, key points, links, participants
+- Context detection for incomplete conversations
+- API quota management with retry countdown
+- Local summary history
+
+## Technology Stack
+
+- JavaScript (ES6 Modules)
+- Chrome Extension APIs (Manifest V3)
+- Google Gemini API
+- HTML5/CSS3
+
+## Architecture
+
+- content/content.js - WhatsApp Web DOM scraping
+- gemini.js - Gemini API integration
+- sidepanel/ - Main UI (side panel)
+- popup/ - Alternative popup UI
+- options/ - Settings page
+- background.js - Service worker
+
+## Privacy
+
+- All processing happens in browser
+- API key stored in chrome.storage.sync
+- Summaries stored locally only
+- No data collection or analytics
