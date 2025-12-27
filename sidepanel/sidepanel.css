@@ -712,3 +712,50 @@ body {
   margin-top: 6px;
   margin-left: 26px;
 }
+
+.summary-section.highlights {
+  background-color: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.highlights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.highlight-item {
+  background-color: #ffffff;
+  border: 1px solid #fcd34d;
+  border-radius: var(--border-radius);
+  padding: 10px;
+  border-left: 3px solid #f59e0b;
+}
+
+.highlight-reason {
+  display: inline-block;
+  background-color: #f59e0b;
+  color: white;
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.highlight-meta {
+  font-size: 0.8em;
+  color: #92400e;
+  margin-bottom: 6px;
+}
+
+.highlight-message {
+  font-size: 0.95em;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: #fef3c7;
+  padding: 8px;
+  border-radius: 6px;
+  word-break: break-word;
+}

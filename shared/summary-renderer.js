@@ -1,6 +1,7 @@
 const ICONS = {
   tldr: '📋',
   keyPoints: '📌',
+  highlights: '⭐',
   links: '🔗',
   period: '📅',
   messages: '💬',
@@ -58,13 +59,17 @@ function renderStructuredSummary(data, container, onExpandContext) {
   if (data.contextStatus?.isIncomplete) {
     container.appendChild(createContextWarning(data.contextStatus, onExpandContext));
   }
-  
+
   container.appendChild(createSection('TL;DR', ICONS.tldr, data.tldr, 'tldr'));
-  
+
   if (data.keyPoints?.length) {
     container.appendChild(createBulletSection('Key Points', ICONS.keyPoints, data.keyPoints, 'key-points'));
   }
-  
+
+  if (data.highlights?.length) {
+    container.appendChild(createHighlightsSection(data.highlights));
+  }
+
   if (data.links?.length) {
     container.appendChild(createLinksSection(data.links));
   }
@@ -106,6 +111,59 @@ function createBulletSection(title, icon, items, className) {
   section.appendChild(list);
   
   return section;
+}
+
+function createHighlightsSection(highlights) {
+  const section = document.createElement('div');
+  section.className = 'summary-section highlights';
+
+  const header = document.createElement('h3');
+  header.className = 'section-header';
+  header.innerHTML = `<span class="section-icon">${ICONS.highlights}</span> Highlights`;
+  section.appendChild(header);
+
+  const list = document.createElement('div');
+  list.className = 'highlights-list';
+
+  highlights.forEach(highlight => {
+    const item = document.createElement('div');
+    item.className = 'highlight-item';
+
+    const reasonBadge = document.createElement('span');
+    reasonBadge.className = 'highlight-reason';
+    reasonBadge.textContent = highlight.reason || 'Important';
+
+    const meta = document.createElement('div');
+    meta.className = 'highlight-meta';
+    meta.textContent = `${highlight.sender || 'Unknown'} • ${formatTimestamp(highlight.timestamp)}`;
+
+    const message = document.createElement('div');
+    message.className = 'highlight-message';
+    message.textContent = highlight.message || '';
+
+    item.appendChild(reasonBadge);
+    item.appendChild(meta);
+    item.appendChild(message);
+    list.appendChild(item);
+  });
+
+  section.appendChild(list);
+  return section;
+}
+
+function formatTimestamp(timestamp) {
+  if (!timestamp) return '';
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return timestamp;
+  }
 }
 
 function createLinksSection(links) {
@@ -203,7 +261,16 @@ export function getSummaryAsText(result) {
   if (result.success && result.data) {
     text += `TL;DR:\n${result.data.tldr}\n\n`;
     text += `Key Points:\n${result.data.keyPoints.map(p => `• ${p}`).join('\n')}\n`;
-    
+
+    if (result.data.highlights?.length) {
+      text += `\nHighlights:\n`;
+      result.data.highlights.forEach(h => {
+        text += `\n⭐ ${h.reason || 'Important'}\n`;
+        text += `   ${h.sender || 'Unknown'} • ${h.timestamp || ''}\n`;
+        text += `   "${h.message || ''}"\n`;
+      });
+    }
+
     if (result.data.links?.length) {
       text += `\nLinks:\n${result.data.links.map(l => `• ${l.context}: ${l.url}`).join('\n')}`;
     }

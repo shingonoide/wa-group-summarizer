@@ -229,6 +229,7 @@ function parseStructuredResponse(text) {
       data: {
         tldr: parsed.tldr || '',
         keyPoints: parsed.keyPoints || [],
+        highlights: parsed.highlights || [],
         links: parsed.links || [],
         contextStatus: parsed.contextStatus || { isIncomplete: false, reason: '', suggestion: '' },
         participants: parsed.participants || []
@@ -251,6 +252,7 @@ function parseStructuredResponse(text) {
           data: {
             tldr: tldrMatch[1],
             keyPoints: keyPoints,
+            highlights: [],
             links: [],
             contextStatus: { isIncomplete: false, reason: '', suggestion: '' },
             participants: []
@@ -532,30 +534,46 @@ function createPrompt(messages, summaryLength = "standard") {
 
   let tldrGuidance = "";
   let bulletsGuidance = "";
+  let highlightsGuidance = "";
   if (summaryLength === "concise") {
-    tldrGuidance = "2-3 sentences, concise overview of main outcome";
-    bulletsGuidance = "3-5 bullet points, most important facts only";
+    tldrGuidance = "3-4 sentences, concise overview of main outcome";
+    bulletsGuidance = "4-6 bullet points, most important facts only";
+    highlightsGuidance = "1-2 messages that are critical or require attention";
   } else if (summaryLength === "comprehensive") {
-    tldrGuidance = "6-8 sentences, detailed overview with context and nuances";
-    bulletsGuidance = "12-15 bullet points, include details, decisions, action items, media mentions";
+    tldrGuidance = "8-10 sentences, detailed overview with full context and nuances";
+    bulletsGuidance = "15-20 bullet points, include all details, decisions, action items, media mentions";
+    highlightsGuidance = "4-6 messages that are important, actionable, or noteworthy";
   } else {
-    tldrGuidance = "4-6 sentences, main themes, tone, decisions and outcomes";
-    bulletsGuidance = "7-10 bullet points, key decisions, who raised what, action items";
+    tldrGuidance = "5-7 sentences, main themes, tone, key decisions and outcomes";
+    bulletsGuidance = "10-12 bullet points, key decisions, who raised what, action items, important mentions";
+    highlightsGuidance = "2-4 messages that deserve special attention or action";
   }
 
-  let prompt = `You are a WhatsApp group chat summarizer. Analyze the messages and return ONLY valid JSON (no markdown, no code blocks).
+  let prompt = `You are a WhatsApp group chat summarizer.
 
-CRITICAL: Return ONLY the JSON object, nothing else. No \`\`\`json, no explanations.
+CRITICAL RULES:
+1. Return ONLY valid JSON - no markdown, no code blocks, no \`\`\`json
+2. ALWAYS respond in the SAME LANGUAGE as the conversation messages (if messages are in Portuguese, respond in Portuguese; if in Spanish, respond in Spanish, etc.)
+3. Never translate to English unless the conversation is in English
 
 Analyze for:
 1. Main topics and outcomes
-2. Whether context appears INCOMPLETE (conversation starts mid-discussion, references earlier content not shown, abrupt beginning)
+2. Whether context appears INCOMPLETE (conversation starts mid-discussion, references earlier content not shown)
 3. Key participants
+4. Messages that deserve special attention (important announcements, action items, deadlines, tools/resources mentioned)
 
 Return this exact JSON structure:
 {
   "tldr": "${tldrGuidance}",
   "keyPoints": ["point1", "point2", ...] (${bulletsGuidance}),
+  "highlights": [
+    {
+      "reason": "why this message is important (e.g., 'action item', 'deadline', 'important decision', 'useful tool/resource')",
+      "sender": "who sent it",
+      "timestamp": "when it was sent",
+      "message": "the full original message text"
+    }
+  ] (${highlightsGuidance}),
   "links": [{"context": "what the link is about", "url": "https://..."}],
   "contextStatus": {
     "isIncomplete": true or false,
@@ -567,17 +585,17 @@ Return this exact JSON structure:
 
 Context detection tips:
 - If first messages reference "what was said before" or reply to unknown context → incomplete
-- If conversation starts with "anyway", "so", "but" suggesting prior discussion → incomplete  
+- If conversation starts with "anyway", "so", "but" suggesting prior discussion → incomplete
 - If there are quoted messages from content not in the provided messages → incomplete
 - If it's a natural conversation start (greetings, new topic introduction) → complete
 
 Guidelines:
-- Be specific, avoid generic summaries
+- Be specific and detailed, avoid generic summaries
 - Group similar opinions together
-- Capture conversation tone for casual chats
+- Capture conversation tone
 - List top 5 participants by message count
-- Output in the same language as the conversation
 - Include ALL shared links with context
+- Highlight messages with: deadlines, action items, important decisions, useful tools/resources, announcements
 
 Messages to analyze:
 `;
