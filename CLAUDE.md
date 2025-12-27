@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WhatsApp Group Chat Summarizer - Chrome Extension (Manifest V3) that uses Google Gemini AI to summarize WhatsApp Web conversations.
+WA Messages Summarizer - Chrome Extension (Manifest V3) that uses Google Gemini AI to summarize WhatsApp Web conversations (both individual chats and groups).
 
 ## Architecture
 
@@ -41,6 +41,7 @@ WhatsApp Group Chat Summarizer - Chrome Extension (Manifest V3) that uses Google
 ### WhatsApp Web Scraping
 - Selectors may break when WhatsApp updates their UI
 - Message extraction uses `div[role='row']` and `[data-pre-plain-text]` attributes
+- **CRITICAL**: Messages must be queried within `chatContainer`, not the entire document, to avoid picking up messages from the chat list sidebar
 - Auto-scrolls to load more messages when needed
 - **CRITICAL**: Always use optional chaining (`?.`) when accessing DOM properties - elements may be null for system messages, notifications, or deleted messages
 

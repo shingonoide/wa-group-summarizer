@@ -543,7 +543,7 @@ async function getLastNMessages(n) {
   }
 
   function extractMessages() {
-    return Array.from(document.querySelectorAll("div[role='row']"));
+    return Array.from(chatContainer.querySelectorAll("div[role='row']"));
   }
 
   function extractTextWithEmojisAndLinks(el) {

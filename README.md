@@ -1,15 +1,17 @@
-# WA Group Summarizer
+# WA Messages Summarizer
 
-Chrome Extension (Manifest V3) that uses Google Gemini AI to summarize WhatsApp Web group conversations.
+Chrome Extension (Manifest V3) that uses Google Gemini AI to summarize WhatsApp Web conversations (chats and groups).
 
 ## Features
 
 - **Smart Summarization**: Summarize 50-500 messages with one click
 - **Multimodal Support**: Optionally analyze images in conversations
+- **Highlights**: Surfaces important messages (deadlines, action items, decisions)
 - **Curated Models**: Pre-selected Gemini models optimized for chat summarization
-- **Structured Output**: TL;DR, key points, links, and participant stats
+- **Structured Output**: TL;DR, key points, highlights, links, and participant stats
 - **Context Detection**: Warns when conversation appears incomplete
-- **Quota Management**: Tracks API usage with countdown timer
+- **Quota Management**: Tracks API usage with countdown timer and token display
+- **Light/Dark Theme**: Automatically follows your OS color scheme
 - **Local History**: Save summaries for later reference
 
 ## Installation
@@ -24,7 +26,7 @@ Chrome Extension (Manifest V3) that uses Google Gemini AI to summarize WhatsApp 
 ## Usage
 
 1. Open WhatsApp Web
-2. Navigate to a group chat
+2. Navigate to any chat or group
 3. Click the extension icon or open the side panel
 4. Select number of messages to summarize
 5. Click "Summarize Current Chat"
@@ -38,6 +40,17 @@ Access settings via the extension options:
 - **Summary Length**: Concise, Standard, or Comprehensive
 - **Include Images**: Enable image analysis (uses more quota)
 - **Save History**: Auto-save summaries locally
+
+## Highlights Criteria
+
+The AI automatically highlights messages containing:
+- Deadlines (dates, "X days left")
+- Action items (requests, tasks)
+- Important decisions
+- Tools/resources (links, apps mentioned)
+- Announcements
+
+The number of highlights varies by summary length setting.
 
 ## Safety Limits
 

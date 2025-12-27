@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>WhatsApp Summarizer Settings</title>
+    <title>WA Messages Summarizer Settings</title>
     <style>
       :root {
         --primary: #25d366;
@@ -276,7 +276,7 @@
   </head>
 
   <body>
-    <h1>⚙️ WhatsApp Summarizer Settings</h1>
+    <h1>⚙️ WA Messages Summarizer Settings</h1>
 
     <!-- Row 1: Form + Saved Messages -->
     <div class="grid grid-2">
@@ -349,8 +349,21 @@
             >
           </div>
           <p class="note">
-            Concise: 2-3 sentences. Standard: 3-5 sentences + bullets.
-            Comprehensive: detailed summary with more bullets.
+            Concise: 3-4 sentences, 4-6 bullets, 1-2 highlights.
+            Standard: 5-7 sentences, 10-12 bullets, 2-4 highlights.
+            Comprehensive: 8-10 sentences, 15-20 bullets, 4-6 highlights.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label>⭐ Highlights criteria</label>
+          <p class="note">
+            The AI highlights messages containing: <strong>deadlines</strong> (dates, "faltam X dias"),
+            <strong>action items</strong> (requests, tasks),
+            <strong>important decisions</strong>,
+            <strong>tools/resources</strong> (links, apps),
+            and <strong>announcements</strong>.
+            The number of highlights depends on the summary length setting above.
           </p>
         </div>
 
